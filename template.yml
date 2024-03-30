@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  # GuildPactBrokerVpc:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     CidrBlock: '10.0.0.0/16'
+  #     EnableDnsSupport: true
+  #     EnableDnsHostnames: true
+  #     Tags:
+  #       - Key: Name
+  #         Value: GuildPactBrokerVpc
+  #       - Key: squad
+  #         Value: qpass
+  GuildPactBrokerCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: GuildPactBrokerCluster
+      Tags:
+        - Key: Name
+          Value: GuildPactBrokerCluster
+        - Key: squad
+          Value: qpass
+  GuildPactBrokerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: GuildPactBrokerTaskDefinition
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      Tags:
+        - Key: Name
+          Value: GuildPactBrokerTaskDefinition
+        - Key: squad
+          Value: qpass
+      ContainerDefinitions:
+        - Name: GuildPactBrokerContainer
+          Image: pactfoundation/pact-broker
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+  MyFargateService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref GuildPactBrokerCluster
+      LaunchType: FARGATE
+      DeploymentController:
+        Type: ECS
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets:
+            - !Ref MySubnet1
+            - !Ref MySubnet2
+          AssignPublicIp: DISABLED
+      TaskDefinition: !Ref GuildPactBrokerTaskDefinition
+  # MySubnet1:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref GuildPactBrokerVpc
+  #     CidrBlock: '10.0.0.0/24'
+  #     AvailabilityZone: us-east-1a
+  # MySubnet2:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref GuildPactBrokerVpc
+  #     CidrBlock: '10.0.1.0/24'
+  #     AvailabilityZone: us-east-1b
