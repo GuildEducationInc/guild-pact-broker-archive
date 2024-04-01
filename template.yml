@@ -11,6 +11,77 @@ Resources:
   #         Value: GuildPactBrokerVpc
   #       - Key: squad
   #         Value: qpass
+  GuildPactBrokerDBCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:         /qpass/guild-pact-broker/database/credentials
+      Description:  Guild Pact Broker DB Credentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey:    "password"
+        PasswordLength:       16
+        ExcludePunctuation:   true
+  GuildPactBrokerRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      AllocatedStorage: 20
+      DBInstanceClass: db.t2.micro
+      EngineVersion: 11.5
+      MasterUsername: admin
+      MasterUserPassword: !Join
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref GuildPactBrokerDBCredentials
+          - ':SecretString:password}}'
+      DBInstanceIdentifier: guild-pact-broker
+      DBName: guild_pact_broker
+      PubliclyAccessible: true
+      Tags:
+        - Key: Name
+          Value: GuildPactBrokerRDS
+        - Key: squad
+          Value: qpass
+    DepndsOn: 
+      - GuildPactBrokerDBCredentials
+      - GuildPactBrokerTaskDefinition
+  GuildPactBrokerTaskIAMExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: GuildPactBrokerExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt GuildPactBrokerLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/guild-pact-broker:*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: !Ref GuildPactBrokerDBCredentials
+        # - PolicyName: GuildPactBrokerTaskExecutionPolicy
+        #   PolicyDocument:
+        #     Version: '2012-10-17'
+        #     Statement:
+        #       - Effect: Allow
+
   GuildPactBrokerCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -26,7 +97,7 @@ Resources:
       Family: GuildPactBrokerTaskDefinition
       Cpu: '256'
       Memory: '512'
-      NetworkMode: awsvpc
+      # NetworkMode: awsvpc
       Tags:
         - Key: Name
           Value: GuildPactBrokerTaskDefinition
@@ -34,24 +105,36 @@ Resources:
           Value: qpass
       ContainerDefinitions:
         - Name: GuildPactBrokerContainer
-          Image: pactfoundation/pact-broker
+          Image: dius/pact-broker
           PortMappings:
             - ContainerPort: 80
               Protocol: tcp
-  MyFargateService:
+      LogConfiguration:
+        LogDriver: awslogs
+        Options:
+          awslogs-group: !Ref GuildPactBrokerLogGroup
+          awslogs-region: !Ref 'AWS::Region'
+          awslogs-stream-prefix: ecs
+      ExecutionRoleArn: !GetAtt GuildPactBrokerTaskIAMExecutionRole.Arn
+  GuildPactBrokerEC2Service:
     Type: AWS::ECS::Service
     Properties:
       Cluster: !Ref GuildPactBrokerCluster
-      LaunchType: FARGATE
+      LaunchType: EC2
       DeploymentController:
         Type: ECS
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          Subnets:
-            - !Ref MySubnet1
-            - !Ref MySubnet2
-          AssignPublicIp: DISABLED
+      # NetworkConfiguration:
+      #   AwsvpcConfiguration:
+      #     Subnets:
+      #       - !Ref MySubnet1
+      #       - !Ref MySubnet2
+      #     AssignPublicIp: DISABLED
       TaskDefinition: !Ref GuildPactBrokerTaskDefinition
+  GuildPactBrokerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/guild-pact-broker
+      RetentionInDays: 7
   # MySubnet1:
   #   Type: AWS::EC2::Subnet
   #   Properties:

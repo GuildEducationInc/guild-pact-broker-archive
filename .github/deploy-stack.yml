@@ -1,0 +1,25 @@
+name: Deploy CloudFormation Stack
+
+on:
+  push:
+    branches:
+      - 'QPASS-549-pact-set-up'
+
+jobs:
+  deploy:
+    runs-on: guild-deploy-dev
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Deploy CloudFormation Stack
+      run: |
+        aws cloudformation deploy \
+          --template-file template.yml \
+          --stack-name YourStackName \
+          --tags Owner=qpass \
+                  Contact=team-qpass \
+                  Repo=github.com/qpass/guild-pact-broker \
+          --capabilities CAPABILITY_IAM
+      shell: bash
