@@ -3,7 +3,7 @@ name: Deploy CloudFormation Stack
 on:
   push:
     branches:
-      - 'QPASS-549-pact-set-up'
+      - main
 
 jobs:
   deploy:
