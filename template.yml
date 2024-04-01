@@ -1,16 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Resources:
-  # GuildPactBrokerVpc:
-  #   Type: AWS::EC2::VPC
-  #   Properties:
-  #     CidrBlock: '10.0.0.0/16'
-  #     EnableDnsSupport: true
-  #     EnableDnsHostnames: true
-  #     Tags:
-  #       - Key: Name
-  #         Value: GuildPactBrokerVpc
-  #       - Key: squad
-  #         Value: qpass
   GuildPactBrokerDBCredentials:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -76,11 +65,6 @@ Resources:
                   - secretsmanager:GetSecretValue
                   - secretsmanager:DescribeSecret
                 Resource: !Ref GuildPactBrokerDBCredentials
-        # - PolicyName: GuildPactBrokerTaskExecutionPolicy
-        #   PolicyDocument:
-        #     Version: '2012-10-17'
-        #     Statement:
-        #       - Effect: Allow
 
   GuildPactBrokerCluster:
     Type: AWS::ECS::Cluster
@@ -146,15 +130,3 @@ Resources:
     Properties:
       LogGroupName: /ecs/guild-pact-broker
       RetentionInDays: 7
-  # MySubnet1:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref GuildPactBrokerVpc
-  #     CidrBlock: '10.0.0.0/24'
-  #     AvailabilityZone: us-east-1a
-  # MySubnet2:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref GuildPactBrokerVpc
-  #     CidrBlock: '10.0.1.0/24'
-  #     AvailabilityZone: us-east-1b
