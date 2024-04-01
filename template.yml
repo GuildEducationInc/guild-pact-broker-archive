@@ -106,6 +106,17 @@ Resources:
       ContainerDefinitions:
         - Name: GuildPactBrokerContainer
           Image: dius/pact-broker
+          Environment:
+            - Name: PACT_BROKER_DATABASE_USERNAME
+              Value: !Sub '{{resolve:secretsmanager:${GuildPactBrokerDBCredentials}:SecretString:username}}'
+            - Name: PACT_BROKER_DATABASE_PASSWORD
+              Value: !Sub '{{resolve:secretsmanager:${GuildPactBrokerDBCredentials}:SecretString:password}}'
+            - Name: PACT_BROKER_DATABASE_HOST
+              Value: !GetAtt GuildPactBrokerRDS.Endpoint.Address
+            - Name: PACT_BROKER_DATABASE_NAME
+              Value: postgres
+            - Name: PACT_BROKER_LOG_LEVEL
+              Value: INFO
           PortMappings:
             - ContainerPort: 80
               Protocol: tcp
